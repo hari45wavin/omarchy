@@ -1172,6 +1172,7 @@ ShellRoot {
   }
 
   function summon(pluginId, payloadJson) {
+    shell.dismissScreensaver()
     var id = shell.pluginRegistry.resolveEnabledId(pluginId)
     if (!id) return false
     var plugins = shell.pluginRegistry.installedPlugins
@@ -1193,7 +1194,6 @@ ShellRoot {
       if (!summoned) console.warn("summon: no live bar widget for:", id)
       return summoned === true
     }
-    shell.dismissScreensaver()
     var next = ({})
     for (var k in openPanelIds) next[k] = openPanelIds[k]
     next[id] = true
@@ -1609,6 +1609,7 @@ ShellRoot {
     if (idle && typeof idle.dismissScreensaver === "function") {
       idle.dismissScreensaver("shell")
     } else {
+      Util.execArgv(["pkill", "-f", "[o]marchy-launch-screensaver"])
       Util.execArgv(["pkill", "-f", "[o]rg.omarchy.screensaver"])
     }
   }

@@ -68,13 +68,18 @@ assert(
   'shell defines dismissScreensaver helper'
 )
 assert(
-  /function summon\(pluginId, payloadJson\) \{[\s\S]*?shell\.dismissScreensaver\(\)/.test(shellSource),
-  'shell dismisses screensaver on panel summon'
+  /function summon\(pluginId, payloadJson\) \{\s*shell\.dismissScreensaver\(\)/.test(shellSource),
+  'shell dismisses screensaver at the start of summon before bar widget check'
 )
 assert(
   /function runShortcut\(entry\) \{[\s\S]*?shell\.dismissScreensaver\(\)/.test(shellSource),
   'shell dismisses screensaver on global shortcut run'
 )
+
+assertEqual(idle.shouldDismissScreensaver({ screensaverWindowCount: 1 }), true, 'screensaver is dismissed when window count > 0')
+assertEqual(idle.shouldDismissScreensaver({ screensaverStartedThisCycle: true }), true, 'screensaver is dismissed when started this cycle')
+assertEqual(idle.shouldDismissScreensaver({ screensaverRunning: true }), true, 'screensaver is dismissed when process running')
+assertEqual(idle.shouldDismissScreensaver({ screensaverWindowCount: 0, screensaverStartedThisCycle: false, screensaverRunning: false }), false, 'idle dismiss no-ops when no screensaver is active')
 
 assertDeepEqual(idle.eventParts({ data: 'a,b,c' }, 2), ['a', 'b', 'c'], 'idle parses raw event data')
 assertDeepEqual(
@@ -117,3 +122,28 @@ if rg -q 'omarchy-shell' "$ROOT/bin/omarchy-toggle-idle"; then
 fi
 
 pass "Stay Awake toggle persists state without reentrant shell IPC"
+
+stub_bin="$test_tmp/bin"
+mkdir -p "$stub_bin"
+cat >"$stub_bin/pkill" <<EOF
+#!/bin/bash
+printf '%s\n' "\$*" >>"$test_tmp/pkill.log"
+exit 0
+EOF
+cat >"$stub_bin/omarchy-shell" <<'EOF'
+#!/bin/bash
+exit 0
+EOF
+chmod +x "$stub_bin"/*
+
+PATH="$stub_bin:$PATH" "$ROOT/bin/omarchy-menu" toggle >/dev/null
+grep -qF '[o]marchy-launch-screensaver' "$test_tmp/pkill.log" || fail "omarchy-menu toggle terminates launch helper"
+grep -qF '[o]rg.omarchy.screensaver' "$test_tmp/pkill.log" || fail "omarchy-menu toggle terminates screensaver terminal"
+pass "omarchy-menu toggle dismisses screensaver launcher and terminals"
+
+: >"$test_tmp/pkill.log"
+PATH="$stub_bin:$PATH" "$ROOT/bin/omarchy-menu" summon >/dev/null
+grep -qF '[o]marchy-launch-screensaver' "$test_tmp/pkill.log" || fail "omarchy-menu summon terminates launch helper"
+grep -qF '[o]rg.omarchy.screensaver' "$test_tmp/pkill.log" || fail "omarchy-menu summon terminates screensaver terminal"
+pass "omarchy-menu summon dismisses screensaver launcher and terminals"
+

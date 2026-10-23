@@ -156,8 +156,13 @@ Item {
   }
 
   function dismissScreensaver(reason) {
-    if (root.screensaverWindowCount > 0 || root.screensaverStartedThisCycle || screensaverProcess.running) {
+    if (IdleModel.shouldDismissScreensaver({
+      screensaverWindowCount: root.screensaverWindowCount,
+      screensaverStartedThisCycle: root.screensaverStartedThisCycle,
+      screensaverRunning: screensaverProcess.running
+    })) {
       logEvent("screensaver-dismiss", reason || "requested")
+      Util.execArgv(["pkill", "-f", "[o]marchy-launch-screensaver"])
       Util.execArgv(["pkill", "-f", "[o]rg.omarchy.screensaver"])
       root.cancelIdleCycle("screensaver-dismissed")
     }
