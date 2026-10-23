@@ -286,8 +286,12 @@ hl = {
     if action.kind == "place" then
       placed[target.address] = true
     elseif action.kind == "fullscreen" then
+      target.fullscreen_action = action.action or "toggle"
+      target.fullscreen_mode = action.mode
       if action.mode == "maximized" then
         target.fullscreen = action.action == "unset" and 0 or 1
+      elseif action.mode == "fullscreen" then
+        target.fullscreen = action.action == "unset" and 0 or 2
       end
     elseif action.kind == "alter_zorder" then
       target.zorder = action.mode
@@ -537,7 +541,7 @@ assert(tiled_max.fullscreen == 1, "a maximized window on a tiled workspace was u
 fi
 pass "a new window on a floating workspace brings a maximized one back to size"
 
-# Focusing a fullscreen or maximized window on a floating workspace raises it to top via alter_zorder.
+# Focusing a fullscreen window on a floating workspace re-enters fullscreen to clear m_allowedOverFullscreen.
 printf 'o.workspace_mode({ workspace = "1", mode = "floating" })\n' >"$modes_dir/1.lua"
 if ! run_lua '
 require("default.hypr.workspace-layouts")
@@ -546,17 +550,17 @@ local normal = window("0x2", 1, { floating = true })
 local tiled_full = window("0x3", 2, { fullscreen = 2 })
 
 state().subscriptions["window.active"][1](full)
-assert(full.zorder == "top", "focusing a fullscreen window on a floating workspace did not raise it to top")
+assert(full.fullscreen_action == "set" and full.fullscreen_mode == "fullscreen", "focusing a fullscreen window on a floating workspace did not re-enter fullscreen")
 
 state().subscriptions["window.active"][1](normal)
-assert(normal.zorder == nil, "a normal non-fullscreen window on a floating workspace had zorder altered")
+assert(normal.fullscreen_action == nil, "a normal non-fullscreen window on a floating workspace re-entered fullscreen")
 
 state().subscriptions["window.active"][1](tiled_full)
-assert(tiled_full.zorder == nil, "a fullscreen window on a tiled workspace was altered")
+assert(tiled_full.fullscreen_action == nil, "a fullscreen window on a tiled workspace was altered")
 '; then
-  fail "focusing a fullscreen window on a floating workspace raises it to top"
+  fail "focusing a fullscreen window on a floating workspace re-enters fullscreen"
 fi
-pass "focusing a fullscreen window on a floating workspace raises it to top"
+pass "focusing a fullscreen window on a floating workspace re-enters fullscreen"
 
 # Apps with float rules of their own keep them on a floating workspace: the
 # open rule passes them over, so they open at their own size and the mode never
