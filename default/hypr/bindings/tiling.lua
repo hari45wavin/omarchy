@@ -56,6 +56,8 @@ o.bind("ALT + TAB", "Focus on next window", hl.dsp.window.cycle_next())
 o.bind("ALT + SHIFT + TAB", "Focus on previous window", hl.dsp.window.cycle_next({ next = false }))
 o.bind("ALT + TAB", "Reveal active window on top", hl.dsp.window.bring_to_top())
 o.bind("ALT + SHIFT + TAB", "Reveal active window on top", hl.dsp.window.bring_to_top())
+o.bind("ALT + TAB", "Raise active window", hl.dsp.window.alter_zorder({ mode = "top" }))
+o.bind("ALT + SHIFT + TAB", "Raise active window", hl.dsp.window.alter_zorder({ mode = "top" }))
 
 o.bind("CTRL + ALT + TAB", "Focus on next monitor", hl.dsp.focus({ monitor = "+1" }))
 o.bind("CTRL + ALT + SHIFT + TAB", "Focus on previous monitor", hl.dsp.focus({ monitor = "-1" }))

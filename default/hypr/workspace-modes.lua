@@ -369,6 +369,18 @@ local function watch()
     end, { type = "oneshot", timeout = 1 })
   end)
 
+  -- When a window on a floating workspace gains focus, ensure it is raised above others if fullscreen or maximized
+  hl.on("window.active", function(window)
+    if not window then
+      return
+    end
+
+    local id = window.workspace and window.workspace.id
+    if floating_workspace(id) and (window.fullscreen or 0) > 0 then
+      hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = window }))
+    end
+  end)
+
   hl.on("workspace.active", update_input)
   hl.on("monitor.focused", update_input)
 end
