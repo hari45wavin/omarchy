@@ -155,6 +155,14 @@ Item {
     root.cancelIdleCycle("screensaver-dismissed")
   }
 
+  function dismissScreensaver(reason) {
+    if (root.screensaverWindowCount > 0 || root.screensaverStartedThisCycle || screensaverProcess.running) {
+      logEvent("screensaver-dismiss", reason || "requested")
+      Util.execArgv(["pkill", "-f", "[o]rg.omarchy.screensaver"])
+      root.cancelIdleCycle("screensaver-dismissed")
+    }
+  }
+
   function eventParts(event, count) {
     return IdleModel.eventParts(event, count)
   }
@@ -373,6 +381,11 @@ Item {
 
     function toggle(): string {
       return root.setIdleEnabled(!root.idleEnabled)
+    }
+
+    function dismissScreensaver(): string {
+      root.dismissScreensaver("ipc")
+      return "ok"
     }
   }
 }

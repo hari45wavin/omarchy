@@ -18,9 +18,11 @@ menu_payload() {
 
 case "$verb" in
   toggle)
+    pkill -f '[o]rg.omarchy.screensaver' 2>/dev/null || true
     exec omarchy-shell shell toggle omarchy.menu "$(menu_payload "$route")"
     ;;
   summon)
+    pkill -f '[o]rg.omarchy.screensaver' 2>/dev/null || true
     exec omarchy-shell shell summon omarchy.menu "$(menu_payload "$route")"
     ;;
   close)

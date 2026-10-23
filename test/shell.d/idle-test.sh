@@ -55,6 +55,26 @@ assert(
   /onIdleTimersEnabledChanged: if \(!idleTimersEnabled\) cancelIdleCycle\(/.test(serviceSource),
   'idle ends a running cycle when both timeouts are set to 0'
 )
+assert(
+  /function dismissScreensaver\(/.test(serviceSource) &&
+    /pkill[\s\S]*?screensaver/.test(serviceSource) &&
+    /cancelIdleCycle\("screensaver-dismissed"\)/.test(serviceSource),
+  'idle service dismisses screensaver and cancels idle cycle'
+)
+
+const shellSource = fs.readFileSync(root + '/shell/shell.qml', 'utf8')
+assert(
+  /function dismissScreensaver\(/.test(shellSource),
+  'shell defines dismissScreensaver helper'
+)
+assert(
+  /function summon\(pluginId, payloadJson\) \{[\s\S]*?shell\.dismissScreensaver\(\)/.test(shellSource),
+  'shell dismisses screensaver on panel summon'
+)
+assert(
+  /function runShortcut\(entry\) \{[\s\S]*?shell\.dismissScreensaver\(\)/.test(shellSource),
+  'shell dismisses screensaver on global shortcut run'
+)
 
 assertDeepEqual(idle.eventParts({ data: 'a,b,c' }, 2), ['a', 'b', 'c'], 'idle parses raw event data')
 assertDeepEqual(

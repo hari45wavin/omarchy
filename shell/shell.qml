@@ -1193,6 +1193,7 @@ ShellRoot {
       if (!summoned) console.warn("summon: no live bar widget for:", id)
       return summoned === true
     }
+    shell.dismissScreensaver()
     var next = ({})
     for (var k in openPanelIds) next[k] = openPanelIds[k]
     next[id] = true
@@ -1603,7 +1604,17 @@ ShellRoot {
   // The IPC targets an ipc shortcut may name, and the service that owns each.
   readonly property var ipcShortcutServices: ({ media: "omarchy.media", notifications: "omarchy.notifications" })
 
+  function dismissScreensaver() {
+    var idle = shell.serviceFor("omarchy.idle")
+    if (idle && typeof idle.dismissScreensaver === "function") {
+      idle.dismissScreensaver("shell")
+    } else {
+      Util.execArgv(["pkill", "-f", "[o]rg.omarchy.screensaver"])
+    }
+  }
+
   function runShortcut(entry) {
+    shell.dismissScreensaver()
     if (entry.kind === "menu") {
       shell.toggle("omarchy.menu", JSON.stringify({ menu: entry.target }))
     } else if (entry.kind === "ipc") {
