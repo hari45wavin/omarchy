@@ -369,16 +369,25 @@ local function watch()
     end, { type = "oneshot", timeout = 1 })
   end)
 
-  -- When a fullscreen window on a floating workspace gains focus, re-enter fullscreen
-  -- to clear m_allowedOverFullscreen on sibling floating windows so it is drawn in front.
+  -- When a fullscreen or maximized window on a floating workspace gains focus, lower
+  -- the rest of its workspace so it is drawn in front, clearing m_allowedOverFullscreen
+  -- on siblings while preserving their relative stacking order.
   hl.on("window.active", function(window)
-    if not window then
+    if not window or (window.fullscreen or 0) == 0 or not window.workspace then
       return
     end
 
-    local id = window.workspace and window.workspace.id
-    if floating_workspace(id) and (window.fullscreen or 0) == 2 then
-      hl.dispatch(hl.dsp.window.fullscreen({ mode = "fullscreen", action = "set", window = window }))
+    local id = window.workspace.id
+    if not floating_workspace(id) then
+      return
+    end
+
+    local windows = hl.get_windows()
+    for i = #windows, 1, -1 do
+      local other = windows[i]
+      if other.address ~= window.address and other.workspace and tostring(other.workspace.id) == tostring(id) then
+        hl.dispatch(hl.dsp.window.alter_zorder({ mode = "bottom", window = other }))
+      end
     end
   end)
 

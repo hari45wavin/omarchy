@@ -223,6 +223,7 @@ local buttons = {}
 local config = { ["input.follow_mouse"] = 1, ["decoration.shadow.enabled"] = false }
 local rules = {}
 local placed = {}
+local lowered = {}
 local active = { id = 1 }
 local titlebars_installed = os.getenv("TITLEBARS_INSTALLED") == "1"
 
@@ -286,8 +287,6 @@ hl = {
     if action.kind == "place" then
       placed[target.address] = true
     elseif action.kind == "fullscreen" then
-      target.fullscreen_action = action.action or "toggle"
-      target.fullscreen_mode = action.mode
       if action.mode == "maximized" then
         target.fullscreen = action.action == "unset" and 0 or 1
       elseif action.mode == "fullscreen" then
@@ -295,6 +294,7 @@ hl = {
       end
     elseif action.kind == "alter_zorder" then
       target.zorder = action.mode
+      table.insert(lowered, { address = target.address, mode = action.mode })
     elseif action.tag then
       local name = action.tag:sub(2)
       if action.tag:sub(1, 1) == "+" then
@@ -366,6 +366,7 @@ function state()
     config = config,
     rules = rules,
     placed = placed,
+    lowered = lowered,
     subscriptions = subscriptions,
     active = active,
   }
@@ -541,26 +542,34 @@ assert(tiled_max.fullscreen == 1, "a maximized window on a tiled workspace was u
 fi
 pass "a new window on a floating workspace brings a maximized one back to size"
 
-# Focusing a fullscreen window on a floating workspace re-enters fullscreen to clear m_allowedOverFullscreen.
+# Focusing a fullscreen or maximized window on a floating workspace lowers sibling windows top-down to clear m_allowedOverFullscreen.
 printf 'o.workspace_mode({ workspace = "1", mode = "floating" })\n' >"$modes_dir/1.lua"
 if ! run_lua '
 require("default.hypr.workspace-layouts")
 local full = window("0x1", 1, { floating = true, fullscreen = 2 })
-local normal = window("0x2", 1, { floating = true })
-local tiled_full = window("0x3", 2, { fullscreen = 2 })
+local normal1 = window("0x2", 1, { floating = true })
+local normal2 = window("0x3", 1, { floating = true })
+local other_ws = window("0x4", 2, { floating = true })
 
-state().subscriptions["window.active"][1](full)
-assert(full.fullscreen_action == "set" and full.fullscreen_mode == "fullscreen", "focusing a fullscreen window on a floating workspace did not re-enter fullscreen")
+local s = state()
+s.subscriptions["window.active"][1](full)
+assert(#s.lowered == 2, "unexpected number of windows lowered: " .. #s.lowered)
+assert(s.lowered[1].address == "0x3" and s.lowered[1].mode == "bottom", "topmost sibling was not lowered first")
+assert(s.lowered[2].address == "0x2" and s.lowered[2].mode == "bottom", "next sibling was not lowered second")
+assert(full.zorder == nil, "the fullscreen window itself was lowered")
+assert(other_ws.zorder == nil, "a window on another workspace was lowered")
 
-state().subscriptions["window.active"][1](normal)
-assert(normal.fullscreen_action == nil, "a normal non-fullscreen window on a floating workspace re-entered fullscreen")
+local lowered_count = #s.lowered
+s.subscriptions["window.active"][1](normal1)
+assert(#s.lowered == lowered_count, "a normal non-fullscreen window altered sibling z-orders")
 
-state().subscriptions["window.active"][1](tiled_full)
-assert(tiled_full.fullscreen_action == nil, "a fullscreen window on a tiled workspace was altered")
+local tiled_full = window("0x5", 2, { fullscreen = 2 })
+s.subscriptions["window.active"][1](tiled_full)
+assert(#s.lowered == lowered_count, "a fullscreen window on a tiled workspace altered sibling z-orders")
 '; then
-  fail "focusing a fullscreen window on a floating workspace re-enters fullscreen"
+  fail "focusing a fullscreen window on a floating workspace lowers sibling windows"
 fi
-pass "focusing a fullscreen window on a floating workspace re-enters fullscreen"
+pass "focusing a fullscreen window on a floating workspace lowers sibling windows"
 
 # Apps with float rules of their own keep them on a floating workspace: the
 # open rule passes them over, so they open at their own size and the mode never
