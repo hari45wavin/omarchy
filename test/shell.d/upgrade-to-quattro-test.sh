@@ -248,6 +248,11 @@ grep -F '/etc/systemd/system.conf.d/99-omarchy-nofile.conf' "$upgrade_to_quattro
 grep -F '/etc/systemd/user.conf.d/99-omarchy-nofile.conf' "$upgrade_to_quattro" >/dev/null
 pass "Omarchy 4 upgrade removes stale nofile drop-ins"
 
+grep -F '/etc/systemd/system/linux-modules-cleanup.service.d/10-omarchy.conf' "$upgrade_to_quattro" >/dev/null ||
+  fail "Omarchy 4 upgrade does not include linux-modules-cleanup drop-in in overwrite list"
+pass "Omarchy 4 upgrade overwrites linux-modules-cleanup drop-in safely"
+
+
 cmdline_line=$(grep -n '^preserve_kernel_cmdline_root$' "$upgrade_to_quattro" | cut -d: -f1)
 packages_line=$(grep -n '^install_omarchy_quattro_packages$' "$upgrade_to_quattro" | cut -d: -f1)
 verify_line=$(grep -n '^verify_kernel_cmdline_root$' "$upgrade_to_quattro" | cut -d: -f1)
