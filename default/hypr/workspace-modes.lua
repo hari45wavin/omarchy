@@ -138,19 +138,22 @@ end
 -- member of a group floats the rest, and a single pass would then find those
 -- already floating and leave them to be stranded when the mode ends.
 local function float_for_mode(windows)
+  local claiming = {}
+
   for _, window in ipairs(windows) do
     set_on_floating_workspace(window, true)
 
     if not window.floating and (window.fullscreen or 0) == 0 then
       local first_time = not (window.tags and has_tag(window, FLOATED_TAG))
-      if first_time then
-        hl.dispatch(hl.dsp.window.tag({ tag = "+" .. FLOATED_TAG, window = window }))
-      end
+      set_claimed(window, true)
+      table.insert(claiming, { window = window, first_time = first_time })
+    end
+  end
 
-      hl.dispatch(hl.dsp.window.float({ action = "on", window = window }))
-      if first_time then
-        place(window)
-      end
+  for _, entry in ipairs(claiming) do
+    set_floating(entry.window, true)
+    if entry.first_time then
+      place(entry.window)
     end
   end
 end
