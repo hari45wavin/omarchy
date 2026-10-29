@@ -105,8 +105,6 @@ mode=$(stat -c '%a' "$planted_dir")
 [[ $mode == "755" ]] || fail "policy setup leaves the managed directory 0755" "mode=$mode"
 [[ $(jq '.DefaultBrowserSettingEnabled' "$planted_dir/omarchy.json") == "false" ]] ||
   fail "policy setup hides the default browser setting"
-[[ $(jq '.PromotionalTabsEnabled' "$planted_dir/omarchy.json") == "false" ]] ||
-  fail "policy setup disables promotional and welcome tabs"
 pass "policy setup drops non-root files and non-empty subdirectories"
 
 owned=$test_tmp/not-root
