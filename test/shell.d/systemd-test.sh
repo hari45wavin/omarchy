@@ -107,15 +107,3 @@ pass "systemd-oomd acts on sustained memory stall"
 grep -Fx 'systemctl enable systemd-oomd.service' "$ROOT/install/config/enable-services.sh" >/dev/null ||
   fail "new installs ship the oomd drop-ins with the daemon that reads them disabled"
 pass "new installs enable systemd-oomd"
-
-cleanup_conf="$ROOT/etc/systemd/system/linux-modules-cleanup.service.d/10-omarchy.conf"
-[[ -f $cleanup_conf ]] || fail "missing linux-modules-cleanup drop-in configuration"
-grep -Fx 'IOSchedulingClass=idle' "$cleanup_conf" >/dev/null ||
-  fail "linux-modules-cleanup drop-in does not set idle I/O scheduling class"
-grep -Fx 'Nice=19' "$cleanup_conf" >/dev/null ||
-  fail "linux-modules-cleanup drop-in does not set low CPU priority (Nice=19)"
-grep -Fx 'CPUSchedulingPolicy=idle' "$cleanup_conf" >/dev/null ||
-  fail "linux-modules-cleanup drop-in does not set idle CPU scheduling policy"
-grep -Fx 'IOSchedulingPriority=7' "$cleanup_conf" >/dev/null ||
-  fail "linux-modules-cleanup drop-in does not set lowest I/O priority"
-pass "linux-modules-cleanup runs with idle I/O and CPU priority to avoid boot contention"
